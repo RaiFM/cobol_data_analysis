@@ -56,6 +56,22 @@
        01 MEDIA-VENDAS     PIC 9(10)V99 VALUE 0.
  
 
+       01 MAX-VENDAS       PIC 9(10)V99 VALUE 0.
+       01 MIN-VENDAS       PIC 9(10)V99 VALUE 99999999.99.
+       01 SEMANA-MAIOR     PIC X(20) VALUE SPACES.
+       01 SEMANA-MENOR     PIC X(20) VALUE SPACES.
+       01 WS-W_SALES-NUM   PIC 9(10)V99 VALUE 0.
+
+       01 MAX-FMT       PIC ZZ,ZZZ,ZZZ,ZZ9.99.
+       01 MAX-BR        PIC X(40).
+       01 MIN-FMT       PIC ZZ,ZZZ,ZZZ,ZZ9.99.
+       01 MIN-BR        PIC X(40).
+       
+
+      
+
+
+
 
        
 
@@ -118,16 +134,12 @@
                            TOTAL-VENDAS + FUNCTION NUMVAL(F-W_SALES)
                    END-IF
 
-                   STRING
-                       F-STORE      DELIMITED BY SIZE
+                   STRING    
                        " "          DELIMITED BY SIZE
-                       F-DEPT       DELIMITED BY SIZE
-                       " "          DELIMITED BY SIZE
-                       F-DATE       DELIMITED BY SIZE
+                        "SEMANA " F-DATE       DELIMITED BY SIZE
                        " "          DELIMITED BY SIZE
                        F-W_SALES    DELIMITED BY SIZE
                        " "          DELIMITED BY SIZE
-                       F-ISHOLIDAY  DELIMITED BY SIZE
                        INTO LINHA-REL
                    END-STRING
 
@@ -139,7 +151,56 @@
                            TOTAL-VENDAS + FUNCTION NUMVAL(F-W_SALES)
                        ADD 1 TO CONT-REGISTROS
                    END-IF
+           
 
+                  IF F-W_SALES NOT = SPACES
+                  COMPUTE WS-W_SALES-NUM = FUNCTION NUMVAL(F-W_SALES)
+              
+      * Atualiza total de vendas
+                  COMPUTE TOTAL-VENDAS = TOTAL-VENDAS + WS-W_SALES-NUM
+                  ADD 1 TO CONT-REGISTROS
+              
+      * Verifica maior venda
+                     IF WS-W_SALES-NUM > MAX-VENDAS
+                         MOVE WS-W_SALES-NUM TO MAX-VENDAS
+                         MOVE F-DATE TO SEMANA-MAIOR
+                     END-IF
+      * Verifica menor venda
+                     IF WS-W_SALES-NUM < MIN-VENDAS
+                         MOVE WS-W_SALES-NUM TO MIN-VENDAS
+                         MOVE F-DATE TO SEMANA-MENOR
+                     END-IF
+                  END-iF
+                  MOVE MAX-VENDAS TO MAX-FMT
+                  INSPECT MAX-FMT REPLACING ALL "," BY "."
+                  MOVE 0 TO POS-ULTIMO
+                  PERFORM VARYING I FROM LENGTH OF MAX-FMT BY -1 
+                  UNTIL I = 1
+                      IF MAX-FMT(I:1) = "."
+                          MOVE I TO POS-ULTIMO
+                          EXIT PERFORM
+                      END-IF
+                  END-PERFORM
+                  IF POS-ULTIMO > 0
+                      MOVE "," TO MAX-FMT(POS-ULTIMO:1)
+                  END-IF
+                  MOVE MAX-FMT TO MAX-BR
+                  
+      * Formata menor venda
+                  MOVE MIN-VENDAS TO MIN-FMT
+                  INSPECT MIN-FMT REPLACING ALL "," BY "."
+                  MOVE 0 TO POS-ULTIMO
+                  PERFORM VARYING I FROM LENGTH OF MIN-FMT BY -1 
+                  UNTIL I = 1
+                      IF MIN-FMT(I:1) = "."
+                          MOVE I TO POS-ULTIMO
+                          EXIT PERFORM
+                      END-IF
+                  END-PERFORM
+                  IF POS-ULTIMO > 0
+                      MOVE "," TO MIN-FMT(POS-ULTIMO:1)
+                  END-IF
+                  MOVE MIN-FMT TO MIN-BR
 
                END-IF
                    
@@ -213,10 +274,27 @@
                INTO LINHA-REL
            END-STRING
            WRITE LINHA-REL
+
+           MOVE "---------------------------------------------"
+               TO LINHA-REL
+           WRITE LINHA-REL
            
-
-
-           MOVE "Programa: testeCSV" TO LINHA-REL
+      * Semana com maior venda
+           MOVE "SEMANA COM MAIOR VENDA: " TO LINHA-REL
+           STRING
+              "DATA MAIOR SEMANA: " SEMANA-MAIOR 
+               "R$ " MAX-BR
+               INTO LINHA-REL
+           END-STRING
+           WRITE LINHA-REL
+           
+      * Semana com menor venda
+           MOVE "SEMANA COM MENOR VENDA: " TO LINHA-REL
+           STRING
+              "DATA MENOR SEMANA: " SEMANA-MENOR 
+               "R$ " MIN-BR 
+               INTO LINHA-REL
+           END-STRING
            WRITE LINHA-REL
 
            CLOSE ARQ-CSV
