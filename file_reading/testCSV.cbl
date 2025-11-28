@@ -36,6 +36,10 @@
        01 F-ISHOLIDAY      PIC X(20).
 
        01 TOTAL-VENDAS     PIC 9(10)V99 VALUE 0.
+       01 TOTAL-FMT        PIC ZZ,ZZZ,ZZZ,ZZ9.99.
+       01 TOTAL-BR         PIC X(40).
+       01 POS-ULTIMO       PIC 9(4) COMP.
+       01 I                PIC 9(4) COMP.
 
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
@@ -44,6 +48,11 @@
 
            OPEN INPUT ARQ-CSV
            OPEN OUTPUT ARQ-REL
+
+      *    *> Primeira linha (cabeçalho)
+           READ ARQ-CSV
+
+
 
            MOVE "RELATÓRIO DETALHADO DAS VENDAS DE CADA SEMANA"
                TO LINHA-REL
@@ -110,10 +119,33 @@
                TO LINHA-REL
            WRITE LINHA-REL
 
+
+           MOVE TOTAL-VENDAS TO TOTAL-FMT
+
+      *  Passando para formato br
+           INSPECT TOTAL-FMT REPLACING ALL "," BY ".".
+
+           MOVE 0 TO POS-ULTIMO.
+           PERFORM VARYING I FROM LENGTH OF TOTAL-FMT BY -1 UNTIL I = 1
+               IF TOTAL-FMT(I:1) = "."
+                MOVE I TO POS-ULTIMO
+                EXIT PERFORM
+               END-IF
+           END-PERFORM.
+
+           IF POS-ULTIMO > 0
+               MOVE "," TO TOTAL-FMT(POS-ULTIMO:1)
+           END-IF.
+
+           MOVE TOTAL-FMT TO TOTAL-BR.
+      * Fim formatação
+
+           DISPLAY TOTAL-BR
+
            MOVE "TOTAL DE VENDAS: " TO LINHA-REL
            STRING
-               "TOTAL DE VENDAS: "
-               FUNCTION NUMVAL-C (TOTAL-VENDAS)
+               "TOTAL DE VENDAS: R$ "
+               TOTAL-BR
                DELIMITED BY SIZE
                INTO LINHA-REL
            END-STRING
