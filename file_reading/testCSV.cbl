@@ -129,11 +129,6 @@
                             F-ISHOLIDAY
                    END-UNSTRING
 
-                   IF F-W_SALES NOT = SPACES
-                       COMPUTE TOTAL-VENDAS =
-                           TOTAL-VENDAS + FUNCTION NUMVAL(F-W_SALES)
-                   END-IF
-
                    STRING    
                        " "          DELIMITED BY SIZE
                         "SEMANA " F-DATE       DELIMITED BY SIZE
@@ -144,14 +139,7 @@
                    END-STRING
 
                    WRITE LINHA-REL
-
-
-                   IF F-W_SALES NOT = SPACES
-                       COMPUTE TOTAL-VENDAS =
-                           TOTAL-VENDAS + FUNCTION NUMVAL(F-W_SALES)
-                       ADD 1 TO CONT-REGISTROS
-                   END-IF
-           
+       
 
                   IF F-W_SALES NOT = SPACES
                   COMPUTE WS-W_SALES-NUM = FUNCTION NUMVAL(F-W_SALES)
