@@ -1,5 +1,7 @@
       ******************************************************************
       * Author: Guilherme Alves Direnzi
+      * Author: Arthur Selingin
+      * Author: Rai Felipe
       * Date: 22/11/2025
       * Purpose: Ler dados externos em COBOL
       * Tectonics: cobc
@@ -11,17 +13,24 @@
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
            SELECT ARQ-CSV
-               ASSIGN TO "C:\Users\raife\Downloads\sales_data_t.csv"
+               ASSIGN TO "C:\data\sales_data_t.csv"
+               ORGANIZATION IS LINE SEQUENTIAL.
+           
+           SELECT ARQ-CSV-FEATURES
+               ASSIGN TO "C:\data\features_data.csv"
                ORGANIZATION IS LINE SEQUENTIAL.
 
            SELECT ARQ-REL
-               ASSIGN TO "C:\Users\raife\Downloads\relatorio_vendas.txt"
+               ASSIGN TO "C:\data\relatorio_vendas.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
 
        DATA DIVISION.
        FILE SECTION.
        FD ARQ-CSV.
        01 LINHA-CSV        PIC X(300).
+
+       FD ARQ-CSV-FEATURES.
+       01 LINHA-CSV-FEATURES        PIC X(300).
 
        FD ARQ-REL.
        01 LINHA-REL        PIC X(300).
@@ -41,20 +50,33 @@
        01 POS-ULTIMO       PIC 9(4) COMP.
        01 I                PIC 9(4) COMP.
 
+       01 CONT-REGISTROS    PIC 9(10) VALUE 0.
+       01 MEDIA-FMT         PIC ZZ,ZZZ,ZZZ,ZZ9.99.
+       01 MEDIA-BR          PIC X(40).
+       01 MEDIA-VENDAS     PIC 9(10)V99 VALUE 0.
+ 
+
+
+       
+
+
+
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
 
            DISPLAY "=== LENDO CSV ===".
 
            OPEN INPUT ARQ-CSV
+           OPEN INPUT ARQ-CSV-FEATURES
            OPEN OUTPUT ARQ-REL
 
-      *    *> Primeira linha (cabeçalho)
+      *    *> Primeira linha (cabeï¿½alho)
            READ ARQ-CSV
+           READ ARQ-CSV-FEATURES
 
 
 
-           MOVE "RELATÓRIO DETALHADO DAS VENDAS DE CADA SEMANA"
+           MOVE "RELATORIO DE VENDAS (05/02/2010 - 26/02/2010)"
                TO LINHA-REL
            WRITE LINHA-REL
 
@@ -111,8 +133,16 @@
 
                    WRITE LINHA-REL
 
-               END-IF
 
+                   IF F-W_SALES NOT = SPACES
+                       COMPUTE TOTAL-VENDAS =
+                           TOTAL-VENDAS + FUNCTION NUMVAL(F-W_SALES)
+                       ADD 1 TO CONT-REGISTROS
+                   END-IF
+
+
+               END-IF
+                   
            END-PERFORM
 
            MOVE "---------------------------------------------"
@@ -138,7 +168,7 @@
            END-IF.
 
            MOVE TOTAL-FMT TO TOTAL-BR.
-      * Fim formatação
+      * Fim formataï¿½ï¿½o
 
            DISPLAY TOTAL-BR
 
@@ -151,13 +181,49 @@
            END-STRING
            WRITE LINHA-REL
 
+
+              *> Calcula mï¿½ï¿½dia de vendas
+           IF CONT-REGISTROS > 0
+               COMPUTE MEDIA-VENDAS = TOTAL-VENDAS / CONT-REGISTROS
+           END-IF.
+
+           MOVE MEDIA-VENDAS TO MEDIA-FMT
+
+           INSPECT MEDIA-FMT REPLACING ALL "," BY ".".
+
+           MOVE 0 TO POS-ULTIMO.
+           PERFORM VARYING I FROM LENGTH OF MEDIA-FMT BY -1 UNTIL I = 1
+               IF MEDIA-FMT(I:1) = "."
+                   MOVE I TO POS-ULTIMO
+                   EXIT PERFORM
+               END-IF
+           END-PERFORM
+
+           IF POS-ULTIMO > 0
+               MOVE "," TO MEDIA-FMT(POS-ULTIMO:1)
+           END-IF
+
+           MOVE MEDIA-FMT TO MEDIA-BR.
+
+           MOVE "MEDIA DE VENDA SEMANAIS: " TO LINHA-REL
+           STRING
+               "MEDIA DE VENDAS SEMANAIS: R$ "
+               MEDIA-BR
+               DELIMITED BY SIZE
+               INTO LINHA-REL
+           END-STRING
+           WRITE LINHA-REL
+           
+
+
            MOVE "Programa: testeCSV" TO LINHA-REL
            WRITE LINHA-REL
 
            CLOSE ARQ-CSV
+           CLOSE ARQ-CSV-FEATURES
            CLOSE ARQ-REL
 
-           DISPLAY "Relatório gerado com sucesso!"
+           DISPLAY "Relatorio gerado com sucesso!"
            GOBACK.
 
        END PROGRAM testeCSV.
